@@ -12,12 +12,14 @@ class UnigramModel:
         self.genre_tokens = self.read_files_in_directory(directory_path, all_data)
         self.genre_probs = self.calculate_genre_probs()
 
+    # Preprocess the text
     def preprocess_text(self, text):
         text = text.translate(str.maketrans('', '', string.punctuation))
         tokens = word_tokenize(text)
         filtered_tokens = [token for token in tokens if token.lower() not in self.stop_words]
         return ' '.join(filtered_tokens)
 
+    # Read the files in the directory and store them in a dictionary with its frequencies
     def read_files_in_directory(self, directory_path, all_data):
         # key: tokens value: their frequency in all songs belonging to a genre
         genre_tokens = {}
@@ -34,34 +36,36 @@ class UnigramModel:
             genre_tokens[genre] = dic_term_frequency
         return genre_tokens
 
+    # Turn frequencies for each word into probabilities
     def freq_to_prob(self, dic_term_frequency):
         dic_term_prob = {}
-
-        # Calculate the total sum of frequencies
         total_frequency = sum(dic_term_frequency.values())
 
-        # Convert the frequencies to probabilities
         for term, frequency in dic_term_frequency.items():
             probability = frequency / total_frequency
             dic_term_prob[term] = probability
         return dic_term_prob
-
+    
+    # Method to call freq_to_prob for each genre and store it in a dictionary
     def calculate_genre_probs(self):
         genre_probs = {}
         for genre_name in self.genre_tokens:
             genre_probs[genre_name] = self.freq_to_prob(self.genre_tokens[genre_name])
         return genre_probs
 
+    # Calculate the probability of a given text to belong to a genre
     def calculate_probability(self, input_text):
         prob_result = {}
+        input_text = self.preprocess_text(input_text.lower())
         for genre_name, genre_prob in self.genre_probs.items():
             prob = 0.0
             for token in input_text.split():
-                token_prob = genre_prob.get(token.lower(), 0.001)
+                token_prob = genre_prob.get(token, 0.001)
                 prob += math.log(token_prob)
             prob_result[genre_name] = prob
         return prob_result
     
+    # Predict the genre of a given text
     def predict_genre(self, input_text):
         genre_probs_result = self.calculate_probability(input_text)
         genre_probs_result = dict(sorted(genre_probs_result.items(), key=lambda item: item[1], reverse=False))
@@ -83,7 +87,9 @@ def main():
     
     unigram_model = UnigramModel(directory_path, all_data)
     example_text = """
-    When I was young, me and my mama had beef 17 years old, kicked out on the streetsThough back at the time I never thought I'd see her face Ain't a woman alive that could take my mama's place Suspended from school, and scared to go home, I was a fool With the big boys breakin' all the rules I shed tears with my baby sister, over the years We was poorer than the other little kids And even though we had different daddies, the same drama When things went wrong we'd blame Mama I reminisce on the stress I caused, it was hell Huggin' on my mama from a jail cell
+    You used to call me on my cell phone
+    Late night when you need my love
+    Call me on my cell phone
     """
     genre_probs_result = unigram_model.calculate_probability(example_text)
     genre_probs_result = dict(sorted(genre_probs_result.items(), key=lambda item: item[1], reverse=False))
@@ -91,7 +97,6 @@ def main():
     for genre_name, result in genre_probs_result.items():
         print(f'{genre_name}: {result}')
     
-    print(unigram_model.predict_genre(example_text))
 
 if __name__ == '__main__':
     main()

@@ -2,13 +2,12 @@ from UnigramModel import UnigramModel
 from BigramModel import BigramModel
 import os
 import random
-import math
 from sklearn.metrics import f1_score
 
 class MixedModel:
     def __init__(self, directory_path, all_data, validation_split=0.1):
 
-        #random.seed(10)
+        random.seed(0)
 
         self.directory_path = directory_path
         self.validation_split = validation_split
@@ -31,17 +30,14 @@ class MixedModel:
 
         for genre in os.listdir(directory_path):
             genre_files = os.listdir(os.path.join(directory_path, genre))
-            #random.shuffle(genre_files)  # Shuffle files to randomize
+            random.shuffle(genre_files)
 
             # Determine the number of files for validation set
             split_index = int(len(genre_files) * validation_split)
             validation_files = genre_files[:split_index]
             train_files = genre_files[split_index:]
 
-            # Save the training files for the genre
             train_data[genre] = train_files
-
-            # Save the validation files for the genre
             validation_data[genre] = validation_files
 
         return train_data, validation_data
@@ -74,7 +70,7 @@ class MixedModel:
         genre_probs_bigram = self.bigram_model.calculate_probability(input_text)
         
         for genre_name in genre_probs_unigram:
-            combined_prob = self.optimal_lambda * genre_probs_unigram[genre_name] - (1 - self.optimal_lambda) * genre_probs_bigram[genre_name]
+            combined_prob = self.optimal_lambda * genre_probs_unigram[genre_name] + (1 - self.optimal_lambda) * genre_probs_bigram[genre_name]
             combined_probabilities[genre_name] = combined_prob
         
         return combined_probabilities
